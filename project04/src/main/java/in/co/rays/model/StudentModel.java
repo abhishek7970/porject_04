@@ -1,23 +1,26 @@
 
 package in.co.rays.model;
-import java.sql.Date;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import in.co.rays.bean.UserBean;
+
+import in.co.rays.bean.CollegeBean;
+import in.co.rays.bean.StudentBean;
+import in.co.rays.exception.DuplicateRecordException;
 import in.co.rays.util.JDBCDataSource;
 
-public class UserModel {
-	
+public class StudentModel {
+
 	public Integer nextPk() throws Exception {
 
 		int pk = 0;
 
 		Connection conn = JDBCDataSource.getConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement("select max(id) from st_user");
+		PreparedStatement pstmt = conn.prepareStatement("select max(id) from st_student");
 
 		ResultSet rs = pstmt.executeQuery();
 
@@ -28,25 +31,39 @@ public class UserModel {
 		JDBCDataSource.closeConnection(conn);
 
 		return pk + 1;
+
 	}
 
-	public void add(UserBean bean) throws Exception {
+	public void add(StudentBean bean) throws Exception {
 
-		int pk = 0;
+		StudentBean existBean = findByEmail(bean.getEmail());
+
+		if (existBean != null) {
+			throw new DuplicateRecordException("email already exist..!!");
+		}
+
+		CollegeModel collegeModel = new CollegeModel();
+
+		CollegeBean collegeBean = collegeModel.findByPk(bean.getCollegeId());
+
+		bean.setCollegeName(collegeBean.getName());
+
+		int pk = nextPk();
 
 		Connection conn = JDBCDataSource.getConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement("insert into st_user values(?,?,?,?,?,?,?,?,?,?,?,?,?)");
+		PreparedStatement pstmt = conn
+				.prepareStatement("insert into st_student values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 		pstmt.setLong(1, pk);
 		pstmt.setString(2, bean.getFirstName());
 		pstmt.setString(3, bean.getLastName());
-		pstmt.setString(4, bean.getLogin());
-		pstmt.setString(5, bean.getPassword());
-		pstmt.setDate(6, new java.sql.Date(bean.getDob().getTime()));
-		pstmt.setString(7, bean.getMobileNo());
-		pstmt.setLong(8, bean.getRoleId());
-		pstmt.setString(9, bean.getGender());
+		pstmt.setDate(4, new java.sql.Date(bean.getDob().getTime()));
+		pstmt.setString(5, bean.getGender());
+		pstmt.setString(6, bean.getMobileNo());
+		pstmt.setString(7, bean.getEmail());
+		pstmt.setLong(8, bean.getCollegeId());
+		pstmt.setString(9, bean.getCollegeName());
 		pstmt.setString(10, bean.getCreatedBy());
 		pstmt.setString(11, bean.getModifiedBy());
 		pstmt.setTimestamp(12, bean.getCreatedDatetime());
@@ -54,25 +71,32 @@ public class UserModel {
 
 		int i = pstmt.executeUpdate();
 
-		System.out.println(" data inserted => " + i);
+		JDBCDataSource.closeConnection(conn);
+
+		System.out.println("data inserted => " + i);
 	}
 
-	public void update(UserBean bean) throws Exception {
+	public void update(StudentBean bean) throws Exception {
+
+		StudentBean existBean = findByEmail(bean.getEmail());
+
+		if (existBean != null && bean.getId() != existBean.getId()) {
+			throw new DuplicateRecordException("email already exist..!!");
+		}
 
 		Connection conn = JDBCDataSource.getConnection();
 
 		PreparedStatement pstmt = conn.prepareStatement(
-				"update st_user set first_name = ?, last_name = ?, login = ?, password = ?, dob = ?, mobile_no = ?, role_id = ?, gender = ?, created_by = ?, modified_by = ?, created_datetime = ?, modified_datetime = ?  where id = ?");
+				"update st_student set first_name = ?, last_name = ?, dob = ?, gender = ?, mobile_no = ?, email = ?, college_id = ?, college_name = ?, created_by = ?, modified_by = ?, created_datetime = ?, modified_datetime = ?  where id = ?");
 
-		
 		pstmt.setString(1, bean.getFirstName());
 		pstmt.setString(2, bean.getLastName());
-		pstmt.setString(3, bean.getLogin());
-		pstmt.setString(4, bean.getPassword());
-		pstmt.setDate(5, new java.sql.Date(bean.getDob().getTime()));
-		pstmt.setString(6, bean.getMobileNo());
-		pstmt.setLong(7, bean.getRoleId());
-		pstmt.setString(8, bean.getGender());
+		pstmt.setDate(3, new java.sql.Date(bean.getDob().getTime()));
+		pstmt.setString(4, bean.getGender());
+		pstmt.setString(5, bean.getMobileNo());
+		pstmt.setString(6, bean.getEmail());
+		pstmt.setLong(7, bean.getCollegeId());
+		pstmt.setString(8, bean.getCollegeName());
 		pstmt.setString(9, bean.getCreatedBy());
 		pstmt.setString(10, bean.getModifiedBy());
 		pstmt.setTimestamp(11, bean.getCreatedDatetime());
@@ -80,128 +104,95 @@ public class UserModel {
 		pstmt.setLong(13, bean.getId());
 
 		int i = pstmt.executeUpdate();
-		
+
 		JDBCDataSource.closeConnection(conn);
 
 		System.out.println("Data updated => " + i);
 
 	}
 
-	public void delete(UserBean bean) throws Exception {
+	public void delete(StudentBean bean) throws Exception {
 
 		Connection conn = JDBCDataSource.getConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement("delete from st_user where id =?");
+		PreparedStatement pstmt = conn.prepareStatement("DELETE FROM st_student WHERE id =?");
+
 		pstmt.setLong(1, bean.getId());
-		
+
 		int i = pstmt.executeUpdate();
-		
+
 		pstmt.executeUpdate();
 
 		JDBCDataSource.closeConnection(conn);
-		
+
 		System.out.println("data deleted => " + i);
+
 	}
 
-	public UserBean findByPK(long id) throws Exception {
+	public  StudentBean findByPk(long id) throws Exception {
 
-		
 		Connection conn = JDBCDataSource.getConnection();
-		PreparedStatement pstmt = conn.prepareStatement("select * from st_user where ID=?");
+		PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM st_student WHERE id =?");
 		pstmt.setLong(1, id);
 		ResultSet rs = pstmt.executeQuery();
 
-		UserBean bean = null;
+		StudentBean bean = null;
 		while (rs.next()) {
-			bean = new UserBean();
+			bean = new StudentBean();
 			bean.setId(rs.getLong(1));
 			bean.setFirstName(rs.getString(2));
 			bean.setLastName(rs.getString(3));
-			bean.setLogin(rs.getString(4));
-			bean.setPassword(rs.getString(5));
-			bean.setDob(rs.getDate(6));
-			bean.setMobileNo(rs.getString(7));
-			bean.setRoleId(rs.getLong(8));
-			bean.setGender(rs.getString(9));
+			bean.setDob(rs.getDate(4));
+			bean.setGender(rs.getString(5));
+			bean.setMobileNo(rs.getString(6));
+			bean.setEmail(rs.getString(7));
+			bean.setCollegeId(rs.getLong(8));
+			bean.setCollegeName(rs.getString(9));
 			bean.setCreatedBy(rs.getString(10));
 			bean.setModifiedBy(rs.getString(11));
 			bean.setCreatedDatetime(rs.getTimestamp(12));
 			bean.setModifiedDatetime(rs.getTimestamp(13));
-			
 
 		}
 		JDBCDataSource.closeConnection(conn);
 		return bean;
-
 	}
-	public UserBean findBylogin(String login) throws Exception {
 
+	public StudentBean findByEmail(String email) throws Exception {
 
 		Connection conn = JDBCDataSource.getConnection();
-		PreparedStatement pstmt = conn.prepareStatement("select * from st_user where login =?");
-		pstmt.setString(1, login);
+		PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM st_student WHERE email =?");
+		pstmt.setString(1, email);
 		ResultSet rs = pstmt.executeQuery();
 
-		UserBean bean = null;
+		StudentBean bean = null;
 		while (rs.next()) {
-			bean = new UserBean();
+			bean = new StudentBean();
 			bean.setId(rs.getLong(1));
 			bean.setFirstName(rs.getString(2));
 			bean.setLastName(rs.getString(3));
-			bean.setLogin(rs.getString(4));
-			bean.setPassword(rs.getString(5));
-			bean.setDob(rs.getDate(6));
-			bean.setMobileNo(rs.getString(7));
-			bean.setRoleId(rs.getLong(8));
-			bean.setGender(rs.getString(9));
+			bean.setDob(rs.getDate(4));
+			bean.setGender(rs.getString(5));
+			bean.setMobileNo(rs.getString(6));
+			bean.setEmail(rs.getString(7));
+			bean.setCollegeId(rs.getLong(8));
+			bean.setCollegeName(rs.getString(9));
 			bean.setCreatedBy(rs.getString(10));
 			bean.setModifiedBy(rs.getString(11));
 			bean.setCreatedDatetime(rs.getTimestamp(12));
 			bean.setModifiedDatetime(rs.getTimestamp(13));
-			
 
-		}
-		JDBCDataSource.closeConnection(conn);
-		return bean;
-	}
-	public UserBean authenticate(String loginId, String password) throws Exception {
-
-		Connection conn = JDBCDataSource.getConnection();
-
-		PreparedStatement pstmt = conn.prepareStatement("select * from st_user where login = ? and password = ?");
-
-		pstmt.setString(1, loginId);
-		pstmt.setString(2, password);
-
-		ResultSet rs = pstmt.executeQuery();
-
-		UserBean bean = null;
-
-		while (rs.next()) {
-			bean = new UserBean();
-			bean.setId(rs.getLong(1));
-			bean.setFirstName(rs.getString(2));
-			bean.setLastName(rs.getString(3));
-			bean.setLogin(rs.getString(4));
-			bean.setPassword(rs.getString(5));
-			bean.setDob(rs.getDate(6));
-			bean.setMobileNo(rs.getString(7));
-			bean.setRoleId(rs.getLong(8));
-			bean.setGender(rs.getString(9));
-			bean.setCreatedBy(rs.getString(10));
-			bean.setModifiedBy(rs.getString(11));
-			bean.setCreatedDatetime(rs.getTimestamp(12));
-			bean.setModifiedDatetime(rs.getTimestamp(13));
+	
 		}
 		JDBCDataSource.closeConnection(conn);
 		return bean;
 	}
 
-	public List search(UserBean bean, int pageNo, int pageSize) throws Exception {
+	public List search(StudentBean bean, int pageNo, int pageSize) throws Exception {
 
 		Connection conn = JDBCDataSource.getConnection();
 
-		StringBuffer sql = new StringBuffer("select * from user where 1=1");
+		StringBuffer sql = new StringBuffer("select * from st_student where 1=1");
 
 		if (bean != null) {
 			if (bean.getFirstName() != null && bean.getFirstName().length() > 0) {
@@ -210,6 +201,7 @@ public class UserModel {
 			if (bean.getDob() != null && bean.getDob().getTime() > 0) {
 				sql.append(" and dob like '" + new java.sql.Date(bean.getDob().getTime()) + "%'");
 			}
+
 		}
 
 		if (pageSize > 0) {
@@ -226,16 +218,16 @@ public class UserModel {
 		List list = new ArrayList();
 
 		while (rs.next()) {
-			bean = new UserBean();
+			bean = new StudentBean();
 			bean.setId(rs.getLong(1));
 			bean.setFirstName(rs.getString(2));
 			bean.setLastName(rs.getString(3));
-			bean.setLogin(rs.getString(4));
-			bean.setPassword(rs.getString(5));
-			bean.setDob(rs.getDate(6));
-			bean.setMobileNo(rs.getString(7));
-			bean.setRoleId(rs.getLong(8));
-			bean.setGender(rs.getString(9));
+			bean.setDob(rs.getDate(4));
+			bean.setGender(rs.getString(5));
+			bean.setMobileNo(rs.getString(6));
+			bean.setEmail(rs.getString(7));
+			bean.setCollegeId(rs.getLong(8));
+			bean.setCollegeName(rs.getString(9));
 			bean.setCreatedBy(rs.getString(10));
 			bean.setModifiedBy(rs.getString(11));
 			bean.setCreatedDatetime(rs.getTimestamp(12));
