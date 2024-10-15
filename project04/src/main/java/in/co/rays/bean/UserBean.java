@@ -1,9 +1,10 @@
+
 package in.co.rays.bean;
 
 import java.util.Date;
 
 public class UserBean extends BaseBean {
-
+	
 	private String firstName;
 	private String lastName;
 	private String login;
@@ -14,6 +15,12 @@ public class UserBean extends BaseBean {
 	private long roleId;
 	private String gender;
 	
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
+	}
 	public String getFirstName() {
 		return firstName;
 	}
@@ -68,10 +75,4 @@ public class UserBean extends BaseBean {
 	public void setGender(String gender) {
 		this.gender = gender;
 	}
-	
-	
-	
-	
-	
-	
 }
