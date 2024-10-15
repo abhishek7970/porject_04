@@ -20,10 +20,10 @@ public class RoleTestModel {
 	private static void testAdd() throws Exception {
 
 		RoleBean bean = new RoleBean();
-		bean.setName("abhishek");
-		bean.setDescription("yadav");
-		bean.setCreatedBy("abhi@gmail.com");
-		bean.setModifiedBy("abhi@gmail.com");
+		bean.setName("surya");
+		bean.setDescription("yadav"); 
+		bean.setCreatedBy("surya@gmail.com");
+		bean.setModifiedBy("surya@gmail.com");
 		bean.setCreatedDatetime(new Timestamp(new Date().getTime()));
 		bean.setModifiedDatetime(new Timestamp(new Date().getTime()));
 
